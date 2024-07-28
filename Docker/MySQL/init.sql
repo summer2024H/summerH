@@ -1,3 +1,5 @@
+/* DROP分は省略
+DROP USER IF EXISTS 'testuser'@'%'; testuserがすでにある場合は削除して新たに作成する*/
 
 DROP DATABASE chatapp;
 DROP USER 'testuser';
@@ -5,30 +7,51 @@ DROP USER 'testuser';
 CREATE USER 'testuser' IDENTIFIED BY 'testuser';
 CREATE DATABASE chatapp;
 USE chatapp
-GRANT ALL PRIVILEGES ON chatapp.* TO 'testuser';
+GRANT ALL PRIVILEGES ON chatapp.* TO 'testuser'; /*データベース内の全ての権限をtestuserが持つ*/
 
-CREATE TABLE users (
-    uid varchar(255) PRIMARY KEY,
-    user_name varchar(255) UNIQUE NOT NULL,
-    email varchar(255) UNIQUE NOT NULL,
-    password varchar(255) NOT NULL
+CREATE TABLE users(
+    id VARCHAR(255) PRIMARY KEY, /*idはuuid4によってos固有の世界で一意の数値となる*/
+    user_name VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL default current_timestamp,
+    updated_at TIMESTAMP NOT NULL default current_timestamp on update current_timestamp
 );
 
-CREATE TABLE channels (
-    id serial PRIMARY KEY,
-    uid varchar(255) REFERENCES users(uid),
-    name varchar(255) UNIQUE NOT NULL,
-    abstract varchar(255)
+CREATE TABLE movies(
+    id SERIAL PRIMARY KEY,
+    movie_title VARCHAR(50) NOT NULL,
+    releasedyear VARCHAR(10) NOT NULL,
+    category VARCHAR(10) NOT NULL
 );
 
-CREATE TABLE messages (
-    id serial PRIMARY KEY,
-    uid varchar(255) REFERENCES users(uid),
-    cid integer REFERENCES channels(id) ON DELETE CASCADE,
-    message text,
-    created_at timestamp not null default current_timestamp
+CREATE TABLE movierooms(
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+    movie_id INTEGER NOT NULL REFERENCES movies(id)
 );
 
-INSERT INTO users(uid, user_name, email, password)VALUES('970af84c-dd40-47ff-af23-282b72b7cca8','テスト','test@gmail.com','37268335dd6931045bdcdf92623ff819a64244b53d0e746d438797349d4da578');
-INSERT INTO channels(id, uid, name, abstract)VALUES(1, '970af84c-dd40-47ff-af23-282b72b7cca8','ぼっち部屋','テストさんの孤独な部屋です');
-INSERT INTO messages(id, uid, cid, message)VALUES(1, '970af84c-dd40-47ff-af23-282b72b7cca8', '1', '誰かかまってください、、')
+CREATE TABLE messages(
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id), 
+    movierooms_id INTEGER NOT NULL REFERENCES movierooms(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL default current_timestamp,
+    updated_at TIMESTAMP NOT NULL default current_timestamp on update current_timestamp
+);
+
+CREATE TABLE message_reactions(
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id), 
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, 
+    reaction_id INTEGER NOT NULL REFERENCES reactions(id)
+);
+
+CREATE TABLE reactions(
+    id SERIAL PRIMARY KEY,
+    reaction_type VARCHAR(255) NOT NULL
+);
+
+INSERT INTO movies(id, movie_title, releasedyear, category ) VALUES(1,'タイタニック','1976年','恋愛');
+INSERT INTO movies(id, movie_title, releasedyear, category ) VALUES(2,'天気の子','2019年','アニメ');
+INSERT INTO movies(id, movie_title, releasedyear, category ) VALUES(3,'Dear','2024年','その他');
+INSERT INTO movies(id, movie_title, releasedyear, category ) VALUES(4,'キングダム','2019年','アクション');
